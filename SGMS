@@ -1,1 +1,257 @@
+#include <iostream>
+#include <string>
+#include <iomanip>
+#include <limits>
+
+using namespace std;
+
+// Function Prototypes
+void displayMenu();
+void addStudent(string*& names, double*& grades, int& count, int& capacity);
+void displayRecords(const string* names, const double* grades, int count);
+double calculateAverage(const double* grades, int count);
+double findHighestRecursive(const double* grades, int count);
+void updateGrade(string* names, double* grades, int count);
+void deleteAllRecords(string*& names, double*& grades, int& count, int& capacity);
+void resizeArrays(string*& names, double*& grades, int& capacity, int count);
+
+int main() {
+    // Dynamic pointers initialized to NULL as required
+    string* studentNames = NULL;
+    double* studentGrades = NULL;
+
+    int studentCount = 0;
+    int arrayCapacity = 0;
+    int choice = 0;
+
+    cout << "==========================================\n";
+    cout << "   WELCOME TO THE GRADE MANAGEMENT SYSTEM \n";
+    cout << "==========================================\n";
+
+    // Main menu loop using do-while construct
+    do {
+        displayMenu();
+        cout << "Enter your choice (1-7): ";
+        
+        // Input validation to prevent infinite loops on non-integer input
+        while (!(cin >> choice)) {
+            cout << "Invalid input. Please enter a number between 1 and 7: ";
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        }
+
+        // Decision structure using switch
+        switch (choice) {
+            case 1:
+                addStudent(studentNames, studentGrades, studentCount, arrayCapacity);
+                break;
+
+            case 2:
+                displayRecords(studentNames, studentGrades, studentCount);
+                break;
+
+            case 3:
+                if (studentCount == 0) {
+                    cout << "\n[!] No records available to calculate an average.\n";
+                } else {
+                    double avg = calculateAverage(studentGrades, studentCount);
+                    cout << fixed << setprecision(2);
+                    cout << "\n[+] Class Average Grade: " << avg << "%\n";
+                }
+                break;
+
+            case 4:
+                if (studentCount == 0) {
+                    cout << "\n[!] No records available to find the highest grade.\n";
+                } else {
+                    double highest = findHighestRecursive(studentGrades, studentCount);
+                    cout << fixed << setprecision(2);
+                    cout << "\n[+] Highest Grade in Class: " << highest << "%\n";
+                }
+                break;
+
+            case 5:
+                updateGrade(studentNames, studentGrades, studentCount);
+                break;
+
+            case 6:
+                deleteAllRecords(studentNames, studentGrades, studentCount, arrayCapacity);
+                cout << "\n[+] All student records have been deleted and memory freed.\n";
+                break;
+
+            case 7:
+                // Ensure proper memory cleanup before exiting
+                deleteAllRecords(studentNames, studentGrades, studentCount, arrayCapacity);
+                cout << "\nExiting system... Memory cleaned up. Goodbye!\n";
+                break;
+
+            default:
+                cout << "\n[!] Invalid option. Please select between 1 and 7.\n";
+        }
+
+    } while (choice != 7);
+
+    return 0;
+}
+
+// Displays the interactive user menu
+void displayMenu() {
+    cout << "\n------------------ MENU ------------------\n";
+    cout << "1. Add New Student Record\n";
+    cout << "2. Display All Student Records\n";
+    cout << "3. Calculate Average Grade\n";
+    cout << "4. Find Highest Grade (Recursive)\n";
+    cout << "5. Update a Student's Grade\n";
+    cout << "6. Delete All Records\n";
+    cout << "7. Exit Program\n";
+    cout << "------------------------------------------\n";
+}
+
+// Dynamically resizes the parallel arrays when capacity is reached
+// Demonstrates passing pointers by reference (string*& and double*&)
+void resizeArrays(string*& names, double*& grades, int& capacity, int count) {
+    int newCapacity = (capacity == 0) ? 2 : capacity * 2;
+
+    // Allocate new dynamic arrays using 'new'
+    string* tempNames = new string[newCapacity];
+    double* tempGrades = new double[newCapacity];
+
+    // Copy existing elements into the newly allocated memory
+    for (int i = 0; i < count; i++) {
+        tempNames[i] = names[i];
+        tempGrades[i] = grades[i];
+    }
+
+    // Free old memory if it was allocated
+    if (names != NULL) {
+        delete[] names;
+        names = NULL;
+    }
+    if (grades != NULL) {
+        delete[] grades;
+        grades = NULL;
+    }
+
+    // Point original pointers to the new memory locations
+    names = tempNames;
+    grades = tempGrades;
+    capacity = newCapacity;
+}
+
+// Adds a new student record to the dynamic arrays
+void addStudent(string*& names, double*& grades, int& count, int& capacity) {
+    // Expand dynamic memory if the array is full
+    if (count == capacity) {
+        resizeArrays(names, grades, capacity, count);
+    }
+
+    cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Clear newline buffer
+    cout << "\nEnter student full name: ";
+    getline(cin, names[count]);
+
+    double gradeInput;
+    cout << "Enter student grade (0 - 100): ";
+    while (!(cin >> gradeInput) || gradeInput < 0 || gradeInput > 100) {
+        cout << "Invalid grade. Please enter a value between 0 and 100: ";
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    }
+
+    grades[count] = gradeInput;
+    count++;
+    cout << "[+] Student record added successfully!\n";
+}
+
+// Displays all stored student names and grades
+// Demonstrates call-by-value for pointers and count
+void displayRecords(const string* names, const double* grades, int count) {
+    if (count == 0 || names == NULL || grades == NULL) {
+        cout << "\n[!] No student records found in the system.\n";
+        return;
+    }
+
+    cout << "\n=========== STUDENT GRADE RECORDS ===========\n";
+    cout << left << setw(6) << "ID" << setw(28) << "Student Name" << "Grade\n";
+    cout << "---------------------------------------------\n";
+    cout << fixed << setprecision(2);
+
+    for (int i = 0; i < count; i++) {
+        cout << left << setw(6) << (i + 1) 
+             << setw(28) << names[i] 
+             << grades[i] << "%\n";
+    }
+    cout << "=============================================\n";
+}
+
+// Calculates and returns the average of all grades
+double calculateAverage(const double* grades, int count) {
+    double sum = 0.0;
+    for (int i = 0; i < count; i++) {
+        sum += grades[i];
+    }
+    return sum / count;
+}
+
+// Recursive function to find the highest grade in the array
+double findHighestRecursive(const double* grades, int count) {
+    // Base case: only one element left to check
+    if (count == 1) {
+        return grades[0];
+    }
+
+    // Recursive step: find the maximum of the first (count - 1) elements
+    double maxOfRest = findHighestRecursive(grades, count - 1);
+
+    // Compare the last element with the maximum of the rest
+    if (grades[count - 1] > maxOfRest) {
+        return grades[count - 1];
+    } else {
+        return maxOfRest;
+    }
+}
+
+// Updates an existing student's grade
+void updateGrade(string* names, double* grades, int count) {
+    if (count == 0) {
+        cout << "\n[!] No student records available to update.\n";
+        return;
+    }
+
+    displayRecords(names, grades, count);
+    
+    int id;
+    cout << "Enter the Student ID to update (1 - " << count << "): ";
+    while (!(cin >> id) || id < 1 || id > count) {
+        cout << "Invalid ID. Please enter a number between 1 and " << count << ": ";
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    }
+
+    int index = id - 1;
+    double newGrade;
+    cout << "Enter new grade for " << names[index] << " (0 - 100): ";
+    while (!(cin >> newGrade) || newGrade < 0 || newGrade > 100) {
+        cout << "Invalid grade. Please enter a value between 0 and 100: ";
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    }
+
+    grades[index] = newGrade;
+    cout << "[+] Grade updated successfully for " << names[index] << "!\n";
+}
+
+// Frees all dynamic memory and resets pointers to NULL
+void deleteAllRecords(string*& names, double*& grades, int& count, int& capacity) {
+    if (names != NULL) {
+        delete[] names;
+        names = NULL;
+    }
+    if (grades != NULL) {
+        delete[] grades;
+        grades = NULL;
+    }
+    count = 0;
+    capacity = 0;
+    cout << "I CERTIFY THAT I HAVE NOT GIVEN OR RECEIVED ANY UNAUTHORIZED ASSISTANCE ON THIS ASSIGNMENT" <<endl;
+}
 
